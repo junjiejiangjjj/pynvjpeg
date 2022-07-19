@@ -1,0 +1,60 @@
+cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+
+include(GNUInstallDirs)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+SET(PROJECT_NAME pynvjpeg)
+PROJECT(${PROJECT_NAME} VERSION 0.1 LANGUAGES CUDA CXX)
+
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)    
+endif()
+
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) 
+link_directories(${CMAKE_CUDA_INCLUDE_DIRS})
+
+find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+find_library(NVJPEG_LIBRARY nvjpeg ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+# find_library(NPPIG_LIBRARY nppig ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+# find_library(NPPC_LIBRARY nppc ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+# find_library(CULIBOS culibos ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+
+
+include_directories(
+  ${PROJECT_SOURCE_DIR}
+  )
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE PATH "" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+set(CMAKE_CXX_FLAGS "-g -std=c++14 -fPIC -W -Wall")
+
+add_library(${PROJECT_NAME}
+  SHARED
+  nvjpeg_decoder.cpp
+  jpeg_image.cpp
+  cuda_util.cpp
+  )
+target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDART_LIBRARY} ${NVJPEG_LIBRARY})
+# target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDART_LIBRARY} ${NVJPEG_LIBRARY} ${NPPIG_LIBRARY} ${NPPC_LIBRARY} ${CULIBOS})
+
+add_executable(test_decode test.cpp)
+target_link_libraries(test_decode ${PROJECT_NAME})
+
+
+include(CTest)
+
+enable_testing()
+
+add_test(
+  NAME test
+  COMMAND $<TARGET_FILE:test_decode>
+  )
