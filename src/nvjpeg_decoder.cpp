@@ -8,22 +8,12 @@
 namespace NVJpegDecoder {
 
 Decoder::Decoder():mDeviceAllocator{&DevMalloc, &DevFree},
-                   mPinnedAllocator{&HostMalloc, &HostFree},
-                   mHwDecodeAvailable(true){
+                   mPinnedAllocator{&HostMalloc, &HostFree} {
 } 
 
 bool Decoder::Init() {
-  auto status = NvJpegStatus(nvjpegCreateEx(NVJPEG_BACKEND_HARDWARE, &mDeviceAllocator,
-                                            &mPinnedAllocator,NVJPEG_FLAGS_DEFAULT, &mHandle));
-  if (!status.IsOk()) {
-    if (status.Code() == NVJPEG_STATUS_ARCH_MISMATCH) {
-      std::cout<<"Hardware Decoder not supported. Falling back to default backend"<<std::endl;
-      CHECK_NVJPEG(nvjpegCreateEx(NVJPEG_BACKEND_DEFAULT, &mDeviceAllocator,
-                                  &mPinnedAllocator,NVJPEG_FLAGS_DEFAULT, &mHandle));
-    }
-  } else {
-    mHwDecodeAvailable = true;
-  }
+  CHECK_NVJPEG(nvjpegCreateEx(NVJPEG_BACKEND_DEFAULT, &mDeviceAllocator,
+                              &mPinnedAllocator,NVJPEG_FLAGS_DEFAULT, &mHandle));
 
   CHECK_NVJPEG(nvjpegJpegStateCreate(mHandle, &mState));
   CHECK_NVJPEG(nvjpegDecoderCreate(mHandle, NVJPEG_BACKEND_DEFAULT, &mNvjpegDecoder));
@@ -107,8 +97,21 @@ bool Decoder::PrepareJpegImage(const std::string& image, JpegImage& output) {
   return true;
 }
 
+bool Decoder::Destory() {
+    nvjpegDecodeParamsDestroy(mNvjpegDecodeParams);
+    nvjpegJpegStreamDestroy(mJpegStreams[0]);
+    nvjpegJpegStreamDestroy(mJpegStreams[1]);
+    nvjpegBufferPinnedDestroy(mPinnedBuffers[0]);
+    nvjpegBufferPinnedDestroy(mPinnedBuffers[1]);
+    nvjpegBufferDeviceDestroy(mDeviceBuffer);
+    nvjpegJpegStateDestroy(mNvjpegDecoupledState);
+    nvjpegDecoderDestroy(mNvjpegDecoder);
+    return true;
+}
+
 Decoder::~Decoder() {
   cudaStreamDestroy(mStream);
+  Destory();
 }
 
 } // namespace NVJpegDecoder

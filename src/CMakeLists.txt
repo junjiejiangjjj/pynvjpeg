@@ -1,12 +1,8 @@
-cmake_minimum_required(VERSION 3.10.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 include(GNUInstallDirs)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -23,38 +19,62 @@ link_directories(${CMAKE_CUDA_INCLUDE_DIRS})
 
 find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 find_library(NVJPEG_LIBRARY nvjpeg ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-# find_library(NPPIG_LIBRARY nppig ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-# find_library(NPPC_LIBRARY nppc ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-# find_library(CULIBOS culibos ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-
 
 include_directories(
   ${PROJECT_SOURCE_DIR}
   )
 
+include(FetchContent)
+FetchContent_Declare(
+  pybind11_sources
+  GIT_REPOSITORY https://github.com/pybind/pybind11.git
+  GIT_TAG v2.9
+  )
+FetchContent_GetProperties(pybind11_sources)
+if(NOT pybind11_sources_POPULATED)
+  FetchContent_Populate(pybind11_sources)
+  add_subdirectory(
+    ${pybind11_sources_SOURCE_DIR}
+    ${pybind11_sources_BINARY_DIR}
+    )
+endif()
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE PATH "" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-set(CMAKE_CXX_FLAGS "-g -std=c++14 -fPIC -W -Wall")
 
 add_library(${PROJECT_NAME}
   SHARED
   nvjpeg_decoder.cpp
   jpeg_image.cpp
   cuda_util.cpp
+  python_nvjpeg_decoder.cpp
   )
-target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDART_LIBRARY} ${NVJPEG_LIBRARY})
-# target_link_libraries(${PROJECT_NAME} PUBLIC ${CUDART_LIBRARY} ${NVJPEG_LIBRARY} ${NPPIG_LIBRARY} ${NPPC_LIBRARY} ${CULIBOS})
+
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+  ${CUDART_LIBRARY}
+  ${NVJPEG_LIBRARY}
+  pybind11::module)
+
+set_target_properties(${PROJECT_NAME}
+  PROPERTIES
+  PREFIX "${PYTHON_MODULE_PREFIX}"
+  SUFFIX "${PYTHON_MODULE_EXTENSION}"
+  )
 
 add_executable(test_decode test.cpp)
-target_link_libraries(test_decode ${PROJECT_NAME})
-
+target_link_libraries(test_decode ${PROJECT_NAME} pybind11::embed)
 
 include(CTest)
-
 enable_testing()
 
 add_test(
-  NAME test
+  NAME test_decode
   COMMAND $<TARGET_FILE:test_decode>
+  )
+
+add_test(
+  NAME python_test_short
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test.py $<TARGET_FILE:${PROJECT_NAME}>
   )

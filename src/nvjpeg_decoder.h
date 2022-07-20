@@ -22,6 +22,7 @@ public:
    
 private:
    bool PrepareJpegImage(const std::string& image, JpegImage& output);
+   bool Destory();
    
 private:
    nvjpegDevAllocator_t mDeviceAllocator;
@@ -38,7 +39,6 @@ private:
    int mBatchSize;
    int mMaxCpuThreads;
    int mDeviceId;
-   int mHwDecodeAvailable;
    cudaStream_t mStream;
 };
 
