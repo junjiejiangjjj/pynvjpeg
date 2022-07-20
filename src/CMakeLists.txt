@@ -71,7 +71,7 @@ enable_testing()
 
 add_test(
   NAME test_decode
-  COMMAND $<TARGET_FILE:test_decode>
+  COMMAND $<TARGET_FILE:test_decode> ${CMAKE_CURRENT_SOURCE_DIR}/cat.jpg
   )
 
 add_test(

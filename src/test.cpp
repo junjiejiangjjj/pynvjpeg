@@ -16,7 +16,8 @@ bool ReadImage(const char* filename, std::string& imagedata) {
   return true;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  const char* image_file = argv[1];
   auto decoder = NVJpegDecoder::Decoder();
   if (!decoder.Init()) {
     std::cout << "Init Failed" << std::endl;
@@ -24,7 +25,7 @@ int main() {
   }
 
   std::string image;
-  if (!ReadImage("/home/junjie.jiangjjj/WorkSpace/dev/junjie/pynvjpeg/src/cat.jpg", image)) {
+  if (!ReadImage(image_file, image)) {
     return -1;
   }
   std::cout << image.size() << std::endl;
