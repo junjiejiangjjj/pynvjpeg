@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include "cuda_util.h"
 #include "nvjpeg_decoder.h"
@@ -33,6 +34,26 @@ bool Decoder::Init() {
   return true;
 }
 
+bool Decoder::Decode(const char* filename, JpegImage& image, nvjpegOutputFormat_t fmt) {
+  std::ifstream input(filename);
+  if (!(input.is_open())) {
+    std::cout << "Open file " << filename << " failed" << std::endl;
+    return false;
+  }
+  std::string imagedata((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+
+  NVJpegDecoder::OriginJpegImages images;
+  images.push_back(imagedata);
+  
+  JpegImages outputs(1);
+
+  if (!BatchDecode(images, outputs)) {
+    return false;
+  }
+  image = std::move(outputs[0]);
+  return true;
+}
+
 bool Decoder::BatchDecode(OriginJpegImages& images, JpegImages& outputs, nvjpegOutputFormat_t fmt) {
   if (NVJPEG_OUTPUT_RGBI != fmt) {
     std::cout << "Only support NVJPEG_OUTPUT_RGBI" << std::endl;
@@ -50,9 +71,9 @@ bool Decoder::BatchDecode(OriginJpegImages& images, JpegImages& outputs, nvjpegO
   }
   
   CHECK_NVJPEG(nvjpegStateAttachDeviceBuffer(mNvjpegDecoupledState, mDeviceBuffer));
-  int buffer_index = 0;
   CHECK_NVJPEG(nvjpegDecodeParamsSetOutputFormat(mNvjpegDecodeParams, fmt));
   
+  int buffer_index = 0;
   for (size_t i = 0; i < images.size(); i++) {
     
     CHECK_NVJPEG(

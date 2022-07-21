@@ -24,19 +24,29 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  std::string image;
-  if (!ReadImage(image_file, image)) {
-    return -1;
-  }
-  std::cout << image.size() << std::endl;
-  NVJpegDecoder::OriginJpegImages images;
-  for (int i = 0; i < 20; i++) {
-    images.push_back(image);
-  }
-  
-  NVJpegDecoder::JpegImages outputs(images.size());
-  if (!decoder.BatchDecode(images, outputs)) {
-    return -1;
+  // test batch deocde  
+  {
+    std::string image;
+    if (!ReadImage(image_file, image)) {
+      return -1;
+    }
+    std::cout << image.size() << std::endl;
+    NVJpegDecoder::OriginJpegImages images;
+    for (int i = 0; i < 20; i++) {
+      images.push_back(image);
+    }
+    NVJpegDecoder::JpegImages outputs(images.size());
+    if (!decoder.BatchDecode(images, outputs)) {
+      return -1;
+    }
+
+    // test decode    
+    {
+      NVJpegDecoder::JpegImage image;
+      if (!decoder.Decode(image_file, image)) {
+        return -1;
+      }
+    }
   }
   return 0;
 }
