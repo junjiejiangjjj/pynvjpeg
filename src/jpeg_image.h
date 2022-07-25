@@ -1,5 +1,6 @@
 #pragma once
-
+#include <vector>
+#include <memory>
 #include <nvjpeg.h>
 
 namespace NVJpegDecoder {
@@ -16,16 +17,23 @@ public:
    JpegImage(JpegImage&& rhs);
    JpegImage& operator=(JpegImage&& rhs);
 
-   bool Init(int width, int height);
+   bool Init(int width, int height, int channels);
 
    nvjpegImage_t* GetImagePoint() {
-     return mNvImage;
+     return mNvImage.get();
    }
 
+   const std::vector<int64_t> Dims() {
+     return std::vector<int64_t>{mWidth, mHeight, mChannels};
+   }
+
+   unsigned char* Cpu();
+
 private:
-   int mWidth;
-   int mHeight;
+   int mWidth = 0;
+   int mHeight = 0;
+   int mChannels = 0;
    nvjpegChromaSubsampling_t mSubsampling;
-   nvjpegImage_t* mNvImage;
+   std::unique_ptr<nvjpegImage_t> mNvImage;
 };
 } // namespace NVJpegDecoder

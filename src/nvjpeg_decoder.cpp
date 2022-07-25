@@ -19,8 +19,6 @@ bool Decoder::Init() {
   CHECK_NVJPEG(nvjpegJpegStateCreate(mHandle, &mState));
   CHECK_NVJPEG(nvjpegDecoderCreate(mHandle, NVJPEG_BACKEND_DEFAULT, &mNvjpegDecoder));
   CHECK_NVJPEG(nvjpegDecoderStateCreate(mHandle, mNvjpegDecoder, &mNvjpegDecoupledState));
-
-  // create_decoupled_api_handles
   CHECK_NVJPEG(nvjpegDecoderCreate(mHandle, NVJPEG_BACKEND_DEFAULT, &mNvjpegDecoder));
   CHECK_NVJPEG(nvjpegDecoderStateCreate(mHandle, mNvjpegDecoder, &mNvjpegDecoupledState));
   CHECK_NVJPEG(nvjpegBufferPinnedCreate(mHandle, NULL, &mPinnedBuffers[0]));
@@ -34,7 +32,7 @@ bool Decoder::Init() {
   return true;
 }
 
-bool Decoder::Decode(const char* filename, JpegImage& image, nvjpegOutputFormat_t fmt) {
+bool Decoder::Read(const char* filename, JpegImage& image) {
   std::ifstream input(filename);
   if (!(input.is_open())) {
     std::cout << "Open file " << filename << " failed" << std::endl;
@@ -54,12 +52,18 @@ bool Decoder::Decode(const char* filename, JpegImage& image, nvjpegOutputFormat_
   return true;
 }
 
-bool Decoder::BatchDecode(OriginJpegImages& images, JpegImages& outputs, nvjpegOutputFormat_t fmt) {
-  if (NVJPEG_OUTPUT_RGBI != fmt) {
-    std::cout << "Only support NVJPEG_OUTPUT_RGBI" << std::endl;
+bool Decoder::Decode(std::string& imagedata , JpegImage& image) {
+  NVJpegDecoder::OriginJpegImages images;
+  images.push_back(imagedata);
+  JpegImages outputs(1);
+  if (!BatchDecode(images, outputs)) {
     return false;
   }
-  
+  image = std::move(outputs[0]);
+  return true;
+}
+
+bool Decoder::BatchDecode(OriginJpegImages& images, JpegImages& outputs) {
   CHECK_CUDA(cudaStreamSynchronize(mStream));
   std::vector<const unsigned char*> bitstreams;
   std::vector<size_t> bitstreams_size;
@@ -67,11 +71,10 @@ bool Decoder::BatchDecode(OriginJpegImages& images, JpegImages& outputs, nvjpegO
   for (size_t i = 0; i < images.size(); i++) {
     bitstreams.push_back((const unsigned char *)images[i].data());
     bitstreams_size.push_back(images[i].size());
-    std::cout << images[i].size() << std::endl;
   }
   
   CHECK_NVJPEG(nvjpegStateAttachDeviceBuffer(mNvjpegDecoupledState, mDeviceBuffer));
-  CHECK_NVJPEG(nvjpegDecodeParamsSetOutputFormat(mNvjpegDecodeParams, fmt));
+  CHECK_NVJPEG(nvjpegDecodeParamsSetOutputFormat(mNvjpegDecodeParams, NVJPEG_OUTPUT_RGBI));
   
   int buffer_index = 0;
   for (size_t i = 0; i < images.size(); i++) {
@@ -112,7 +115,7 @@ bool Decoder::PrepareJpegImage(const std::string& image, JpegImage& output) {
   }
 
   // for NVJPEG_OUTPUT_RGBI, the channels is always 1;
-  if (!output.Init(widths[0], heights[0])) {
+  if (!output.Init(widths[0], heights[0], channels)) {
     return false;
   }
   return true;

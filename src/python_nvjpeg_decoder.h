@@ -10,14 +10,15 @@ namespace NVJpegDecoder {
 
 class PythonDecoder {
 public:
-   PythonDecoder() = default;
+   PythonDecoder() {}
 
    PythonDecoder(PythonDecoder&) = delete;
    PythonDecoder& operator=(PythonDecoder&) = delete;
 
    bool Init();
-   bool BatchDecode(py::list images);
-   
+   py::object Read(std::string&);
+   py::object Decode(std::string&);
+
 private:
    Decoder mDecoder;
 };

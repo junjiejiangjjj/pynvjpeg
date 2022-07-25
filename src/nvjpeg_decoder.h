@@ -17,8 +17,9 @@ public:
    Decoder();
    virtual ~Decoder();
    bool Init();
-   bool Decode(const char* filename, JpegImage& image, nvjpegOutputFormat_t fmt=NVJPEG_OUTPUT_RGBI);
-   bool BatchDecode(OriginJpegImages& origin_images, JpegImages& outputs, nvjpegOutputFormat_t fmt=NVJPEG_OUTPUT_RGBI);
+   bool Read(const char* filename, JpegImage& image);
+   bool Decode(std::string& imagedata , JpegImage& image);   
+   bool BatchDecode(OriginJpegImages& origin_images, JpegImages& outputs);
    
 private:
    bool PrepareJpegImage(const std::string& image, JpegImage& output);

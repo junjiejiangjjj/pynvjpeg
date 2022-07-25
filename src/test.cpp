@@ -1,4 +1,5 @@
 #include <string>
+#include <sys/timeb.h>
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -30,23 +31,43 @@ int main(int argc, char *argv[]) {
     if (!ReadImage(image_file, image)) {
       return -1;
     }
-    std::cout << image.size() << std::endl;
     NVJpegDecoder::OriginJpegImages images;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 10; i++) {
       images.push_back(image);
     }
-    NVJpegDecoder::JpegImages outputs(images.size());
-    if (!decoder.BatchDecode(images, outputs)) {
-      return -1;
-    }
+    int count = 0;
+    timeb t1, t2;
+    ftime(&t1);
 
-    // test decode    
-    {
-      NVJpegDecoder::JpegImage image;
-      if (!decoder.Decode(image_file, image)) {
+    while (count < 100) {
+      NVJpegDecoder::JpegImages outputs(images.size());
+      if (!decoder.BatchDecode(images, outputs)) {
         return -1;
       }
+      count++;
     }
+    ftime(&t2);
+    std::cout << "--------- " << t2.time * 1000 + t2.millitm - t1.time * 1000 - t1.millitm << std::endl;
+  }
+    
+  // test decode    
+  {
+    timeb t1, t2;
+    ftime(&t1);    
+    {
+      int count = 0;
+      while (count < 1000) {
+        NVJpegDecoder::JpegImage image;
+        if (!decoder.Read(image_file, image)) {
+          return -1;
+        }
+        unsigned char* d = image.Cpu();
+        delete[] d;
+        count++;
+      }
+    }
+    ftime(&t2);
+    std::cout << "--------- " << t2.time * 1000 + t2.millitm - t1.time * 1000 - t1.millitm << std::endl;        
   }
   return 0;
 }
