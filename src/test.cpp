@@ -25,23 +25,19 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  // test batch deocde  
+  // test deocde from bytes
   {
-    std::string image;
-    if (!ReadImage(image_file, image)) {
+    std::string image_btyes;
+    if (!ReadImage(image_file, image_btyes)) {
       return -1;
-    }
-    NVJpegDecoder::OriginJpegImages images;
-    for (int i = 0; i < 10; i++) {
-      images.push_back(image);
     }
     int count = 0;
     timeb t1, t2;
     ftime(&t1);
 
-    while (count < 100) {
-      NVJpegDecoder::JpegImages outputs(images.size());
-      if (!decoder.BatchDecode(images, outputs)) {
+    while (count < 1000) {
+      NVJpegDecoder::JpegImage image;
+      if (!decoder.Decode(image_btyes, image)) {
         return -1;
       }
       count++;
@@ -50,7 +46,7 @@ int main(int argc, char *argv[]) {
     std::cout << "--------- " << t2.time * 1000 + t2.millitm - t1.time * 1000 - t1.millitm << std::endl;
   }
     
-  // test decode    
+  // test decode from file
   {
     timeb t1, t2;
     ftime(&t1);    

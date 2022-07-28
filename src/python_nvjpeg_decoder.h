@@ -10,7 +10,7 @@ namespace NVJpegDecoder {
 
 class PythonDecoder {
 public:
-   PythonDecoder() {}
+   PythonDecoder(int device_id=0): mDecoder(device_id) { }
 
    PythonDecoder(PythonDecoder&) = delete;
    PythonDecoder& operator=(PythonDecoder&) = delete;

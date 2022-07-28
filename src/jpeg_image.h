@@ -24,7 +24,7 @@ public:
    }
 
    const std::vector<int64_t> Dims() {
-     return std::vector<int64_t>{mWidth, mHeight, mChannels};
+     return std::vector<int64_t>{mHeight, mWidth, mChannels};
    }
 
    unsigned char* Cpu();

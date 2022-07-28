@@ -20,7 +20,7 @@ py::object PythonDecoder::Read(std::string& filename) {
     if (mDecoder.Read(filename.c_str(), image)) {
       data = image.Cpu();
     }
-  } // out of gil
+  } // gets gil
   
   std::unique_ptr<unsigned char> ret(data);
   if (ret != nullptr) {
@@ -43,7 +43,7 @@ py::object PythonDecoder::Decode(std::string& image_bytes) {
 
 PYBIND11_MODULE(pynvjpeg, m) {
   py::class_<PythonDecoder, std::shared_ptr<PythonDecoder>>(m, "Decoder")
-     .def(py::init<>())
+     .def(py::init<int>())
      .def("init", &PythonDecoder::Init)
      .def("imread", &PythonDecoder::Read)
      .def("imdecode", &PythonDecoder::Decode);  

@@ -7,11 +7,12 @@ namespace NVJpegDecoder {
 bool JpegImage::Init(int width, int height, int channels) {
   mNvImage = std::make_unique<nvjpegImage_t>();
   unsigned char * pBuffer = nullptr;
-  CHECK_CUDA(cudaMalloc((void **)&pBuffer, width * height * channels));
+  CHECK_CUDA(cudaMalloc((void **)&pBuffer, height * width * channels));
   for(int i = 0; i < channels; i++) {
-    mNvImage->channel[i] = pBuffer + (width * height * i);
+    mNvImage->channel[i] = pBuffer + (height *width * i);
     mNvImage->pitch[i] = (unsigned int)width;
   }
+
   mNvImage->pitch[0] = (unsigned int)width * channels;
   mWidth = width;
   mHeight = height;
@@ -39,9 +40,7 @@ JpegImage& JpegImage::operator=(JpegImage&& rhs) {
 unsigned char* JpegImage::Cpu() {
   size_t size = mHeight * mWidth * mChannels;
   auto buffer = std::make_unique<unsigned char[]>(size) ;
-  CudaStatus s(cudaMemcpy2D(buffer.get(), mWidth * mChannels,
-                            mNvImage->channel[0], mNvImage->pitch[0],
-                            mWidth * mChannels, mHeight, cudaMemcpyDeviceToHost));
+  CudaStatus s(cudaMemcpy(buffer.get(), mNvImage->channel[0], size, cudaMemcpyDeviceToHost));
 
   if (!s.IsOk()) {
     std::cout << "Copy image from GPU to CPU failed: " << s.Msg() << std::endl;
